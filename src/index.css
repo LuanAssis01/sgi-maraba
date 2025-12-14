@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+/* Estilos customizados para marcadores do Leaflet */
+.custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
