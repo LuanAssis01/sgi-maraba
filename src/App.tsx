@@ -540,6 +540,7 @@ const SGIApp = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
   const [highlightedRequest, setHighlightedRequest] = useState<number | null>(null);
+  const [adminTab, setAdminTab] = useState<'map' | 'reports' | 'teams'>('map');
 
   // Estado temporário para novo ponto no mapa
   const [newPointCoords, setNewPointCoords] = useState<Coords | null>(null);
@@ -783,6 +784,58 @@ const SGIApp = () => {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Dados das equipes de manutenção
+  const teams = [
+    { 
+      id: 1, 
+      name: 'Equipe Alpha', 
+      leader: 'Carlos Oliveira', 
+      phone: '(94) 99888-7766',
+      members: ['João Silva', 'Pedro Santos', 'Lucas Lima'],
+      status: 'available',
+      currentTask: null,
+      completedToday: 3,
+      vehicle: 'Caminhão Cesto #01',
+      area: 'Nova Marabá / Folhas 25-35'
+    },
+    { 
+      id: 2, 
+      name: 'Equipe Beta', 
+      leader: 'Ricardo Souza', 
+      phone: '(94) 99777-6655',
+      members: ['André Costa', 'Marcos Pereira'],
+      status: 'busy',
+      currentTask: 'Protocolo 2025-0002-LP',
+      completedToday: 2,
+      vehicle: 'Caminhão Cesto #02',
+      area: 'Cidade Nova / Centro'
+    },
+    { 
+      id: 3, 
+      name: 'Equipe Gamma', 
+      leader: 'Fernando Alves', 
+      phone: '(94) 99666-5544',
+      members: ['Thiago Rocha', 'Bruno Dias', 'Rafael Nunes'],
+      status: 'available',
+      currentTask: null,
+      completedToday: 4,
+      vehicle: 'Caminhão Cesto #03',
+      area: 'Velha Marabá / Amapá'
+    },
+    { 
+      id: 4, 
+      name: 'Equipe Delta', 
+      leader: 'Marcelo Castro', 
+      phone: '(94) 99555-4433',
+      members: ['Gabriel Martins', 'Diego Ferreira'],
+      status: 'offline',
+      currentTask: null,
+      completedToday: 0,
+      vehicle: 'Caminhão Cesto #04',
+      area: 'São Félix / Morada Nova'
+    }
+  ];
 
   // --- HEADER COMPONENT ---
   const Header = ({ role }: { role: string }) => (
@@ -1139,13 +1192,22 @@ const SGIApp = () => {
               <div>
                 <h3 className="text-xs font-bold text-slate-400 uppercase mb-3 px-2">Dashboard</h3>
                 <div className="space-y-1">
-                  <button className="w-full text-left px-3 py-2 bg-yellow-50 text-yellow-700 font-medium rounded-lg flex items-center gap-2">
+                  <button 
+                    onClick={() => setAdminTab('map')}
+                    className={`w-full text-left px-3 py-2 font-medium rounded-lg flex items-center gap-2 transition ${adminTab === 'map' ? 'bg-yellow-50 text-yellow-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
                     <MapPin size={16} /> Mapa Geral
                   </button>
-                  <button className="w-full text-left px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-2">
+                  <button 
+                    onClick={() => setAdminTab('reports')}
+                    className={`w-full text-left px-3 py-2 font-medium rounded-lg flex items-center gap-2 transition ${adminTab === 'reports' ? 'bg-yellow-50 text-yellow-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
                     <BarChart3 size={16} /> Relatórios
                   </button>
-                  <button className="w-full text-left px-3 py-2 text-slate-600 hover:bg-slate-50 rounded-lg flex items-center gap-2">
+                  <button 
+                    onClick={() => setAdminTab('teams')}
+                    className={`w-full text-left px-3 py-2 font-medium rounded-lg flex items-center gap-2 transition ${adminTab === 'teams' ? 'bg-yellow-50 text-yellow-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
                     <Users size={16} /> Equipes
                   </button>
                 </div>
@@ -1266,6 +1328,7 @@ const SGIApp = () => {
             </div>
 
             {/* Admin Map View */}
+            {adminTab === 'map' && (
             <div className="flex-1 relative bg-slate-100">
               <InteractiveMap 
                 requests={filteredRequests} 
@@ -1446,6 +1509,401 @@ const SGIApp = () => {
                 </div>
               </div>
             </div>
+            )}
+
+            {/* Página de Relatórios */}
+            {adminTab === 'reports' && (
+              <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
+                  {/* Header */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-800">Relatórios</h2>
+                      <p className="text-slate-500 text-sm">Análise de desempenho e estatísticas do sistema</p>
+                    </div>
+                    <button className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg transition">
+                      <Download size={18} />
+                      Exportar PDF
+                    </button>
+                  </div>
+
+                  {/* Cards de Estatísticas */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-blue-100 p-3 rounded-lg">
+                          <FileText className="text-blue-600" size={24} />
+                        </div>
+                        <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Este mês</span>
+                      </div>
+                      <div className="text-3xl font-bold text-slate-800">{stats.total}</div>
+                      <p className="text-sm text-slate-500 mt-1">Total de Solicitações</p>
+                      <div className="mt-3 flex items-center gap-1 text-xs text-green-600">
+                        <TrendingUp size={14} />
+                        <span>+12% vs mês anterior</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-green-100 p-3 rounded-lg">
+                          <CheckCircle className="text-green-600" size={24} />
+                        </div>
+                        <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded">{stats.sla}% SLA</span>
+                      </div>
+                      <div className="text-3xl font-bold text-slate-800">{stats.done}</div>
+                      <p className="text-sm text-slate-500 mt-1">Concluídos</p>
+                      <div className="mt-3 flex items-center gap-1 text-xs text-green-600">
+                        <TrendingUp size={14} />
+                        <span>+8% vs mês anterior</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-yellow-100 p-3 rounded-lg">
+                          <Clock className="text-yellow-600" size={24} />
+                        </div>
+                        <span className="text-xs font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded">Média</span>
+                      </div>
+                      <div className="text-3xl font-bold text-slate-800">{stats.avgTime}</div>
+                      <p className="text-sm text-slate-500 mt-1">Tempo Médio de Resolução</p>
+                      <div className="mt-3 flex items-center gap-1 text-xs text-green-600">
+                        <TrendingUp size={14} />
+                        <span>-2h vs mês anterior</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="bg-purple-100 p-3 rounded-lg">
+                          <Users className="text-purple-600" size={24} />
+                        </div>
+                        <span className="text-xs font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded">Ativas</span>
+                      </div>
+                      <div className="text-3xl font-bold text-slate-800">4</div>
+                      <p className="text-sm text-slate-500 mt-1">Equipes Cadastradas</p>
+                      <div className="mt-3 flex items-center gap-1 text-xs text-blue-600">
+                        <span>3 disponíveis hoje</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gráficos e Tabelas */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Solicitações por Tipo */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                      <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <BarChart3 size={18} className="text-yellow-600" />
+                        Solicitações por Tipo
+                      </h3>
+                      <div className="space-y-4">
+                        {[
+                          { type: 'Lâmpada Queimada', count: requests.filter(r => r.type === 'Lâmpada Queimada').length, color: 'bg-yellow-500', percent: 40 },
+                          { type: 'Poste Piscando', count: requests.filter(r => r.type === 'Poste Piscando').length, color: 'bg-orange-500', percent: 25 },
+                          { type: 'Lâmpada Acesa de Dia', count: requests.filter(r => r.type === 'Lâmpada Acesa de Dia').length, color: 'bg-blue-500', percent: 20 },
+                          { type: 'Poste Danificado', count: requests.filter(r => r.type === 'Poste Danificado').length, color: 'bg-red-500', percent: 15 }
+                        ].map((item, i) => (
+                          <div key={i}>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-sm text-slate-700">{item.type}</span>
+                              <span className="text-sm font-bold text-slate-800">{item.count}</span>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full ${item.color} rounded-full transition-all`}
+                                style={{ width: `${(item.count / stats.total) * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Solicitações por Status */}
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                      <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <TrendingUp size={18} className="text-yellow-600" />
+                        Status das Solicitações
+                      </h3>
+                      <div className="flex items-center justify-center py-4">
+                        <div className="relative w-48 h-48">
+                          {/* Círculo de progresso simulado */}
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle cx="96" cy="96" r="80" stroke="#e2e8f0" strokeWidth="16" fill="none" />
+                            <circle cx="96" cy="96" r="80" stroke="#16a34a" strokeWidth="16" fill="none" 
+                              strokeDasharray={`${(stats.done / stats.total) * 502} 502`} />
+                            <circle cx="96" cy="96" r="80" stroke="#2563eb" strokeWidth="16" fill="none" 
+                              strokeDasharray={`${(stats.progress / stats.total) * 502} 502`}
+                              strokeDashoffset={`-${(stats.done / stats.total) * 502}`} />
+                            <circle cx="96" cy="96" r="80" stroke="#eab308" strokeWidth="16" fill="none" 
+                              strokeDasharray={`${(stats.pending / stats.total) * 502} 502`}
+                              strokeDashoffset={`-${((stats.done + stats.progress) / stats.total) * 502}`} />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center flex-col">
+                            <span className="text-3xl font-bold text-slate-800">{stats.total}</span>
+                            <span className="text-xs text-slate-500">Total</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-center gap-6 mt-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span className="text-xs text-slate-600">Concluídos ({stats.done})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span className="text-xs text-slate-600">Em andamento ({stats.progress})</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                          <span className="text-xs text-slate-600">Pendentes ({stats.pending})</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tabela de Últimas Solicitações */}
+                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-5 border-b border-slate-200">
+                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        <FileText size={18} className="text-yellow-600" />
+                        Últimas Solicitações
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Protocolo</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Tipo</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Endereço</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Status</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Prioridade</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Data</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {requests.slice(0, 5).map(req => (
+                            <tr key={req.id} className="hover:bg-slate-50 cursor-pointer" onClick={() => {
+                              setSelectedRequest(req);
+                              setShowProtocolModal(true);
+                            }}>
+                              <td className="px-5 py-4 text-sm font-mono text-slate-600">{req.protocol}</td>
+                              <td className="px-5 py-4 text-sm text-slate-800">{req.type}</td>
+                              <td className="px-5 py-4 text-sm text-slate-600 max-w-48 truncate">{req.address}</td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${getStatusColor(req.status)}`}>
+                                  {getStatusText(req.status)}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${getPriorityColor(req.priority)}`}>
+                                  {getPriorityText(req.priority)}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4 text-sm text-slate-500">{req.date}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Página de Equipes */}
+            {adminTab === 'teams' && (
+              <div className="flex-1 overflow-y-auto bg-slate-50 p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
+                  {/* Header */}
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-800">Equipes de Manutenção</h2>
+                      <p className="text-slate-500 text-sm">Gerencie as equipes de campo e seus status</p>
+                    </div>
+                    <button className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-2 px-4 rounded-lg transition">
+                      <Plus size={18} />
+                      Nova Equipe
+                    </button>
+                  </div>
+
+                  {/* Resumo das Equipes */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-100 p-2 rounded-lg">
+                          <Users className="text-blue-600" size={20} />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-slate-800">{teams.length}</div>
+                          <p className="text-xs text-slate-500">Total de Equipes</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-green-100 p-2 rounded-lg">
+                          <CheckCircle className="text-green-600" size={20} />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">{teams.filter(t => t.status === 'available').length}</div>
+                          <p className="text-xs text-slate-500">Disponíveis</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-yellow-100 p-2 rounded-lg">
+                          <Navigation className="text-yellow-600" size={20} />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-yellow-600">{teams.filter(t => t.status === 'busy').length}</div>
+                          <p className="text-xs text-slate-500">Em Campo</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-slate-100 p-2 rounded-lg">
+                          <Clock className="text-slate-600" size={20} />
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-slate-600">{teams.filter(t => t.status === 'offline').length}</div>
+                          <p className="text-xs text-slate-500">Offline</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lista de Equipes */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {teams.map(team => (
+                      <div key={team.id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+                        <div className={`h-2 ${
+                          team.status === 'available' ? 'bg-green-500' : 
+                          team.status === 'busy' ? 'bg-yellow-500' : 'bg-slate-300'
+                        }`}></div>
+                        <div className="p-5">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h3 className="font-bold text-lg text-slate-800">{team.name}</h3>
+                              <p className="text-sm text-slate-500">{team.area}</p>
+                            </div>
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                              team.status === 'available' ? 'bg-green-100 text-green-700' : 
+                              team.status === 'busy' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {team.status === 'available' ? 'Disponível' : team.status === 'busy' ? 'Em Campo' : 'Offline'}
+                            </span>
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3 text-sm">
+                              <User size={16} className="text-slate-400" />
+                              <span className="text-slate-600">Líder:</span>
+                              <span className="font-medium text-slate-800">{team.leader}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <Phone size={16} className="text-slate-400" />
+                              <span className="text-slate-600">Contato:</span>
+                              <span className="font-medium text-slate-800">{team.phone}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <Users size={16} className="text-slate-400" />
+                              <span className="text-slate-600">Membros:</span>
+                              <span className="font-medium text-slate-800">{team.members.length + 1} pessoas</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                              <Navigation size={16} className="text-slate-400" />
+                              <span className="text-slate-600">Veículo:</span>
+                              <span className="font-medium text-slate-800">{team.vehicle}</span>
+                            </div>
+                          </div>
+
+                          {team.currentTask && (
+                            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <p className="text-xs font-bold text-yellow-800 uppercase mb-1">Tarefa Atual</p>
+                              <p className="text-sm font-medium text-slate-800">{team.currentTask}</p>
+                            </div>
+                          )}
+
+                          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                            <div className="text-sm">
+                              <span className="text-slate-500">Concluídos hoje:</span>
+                              <span className="ml-2 font-bold text-green-600">{team.completedToday}</span>
+                            </div>
+                            <div className="flex gap-2">
+                              <button className="p-2 hover:bg-slate-100 rounded-lg transition" title="Ver detalhes">
+                                <Eye size={18} className="text-slate-600" />
+                              </button>
+                              <button className="p-2 hover:bg-slate-100 rounded-lg transition" title="Enviar mensagem">
+                                <MessageSquare size={18} className="text-slate-600" />
+                              </button>
+                              <button className="p-2 hover:bg-slate-100 rounded-lg transition" title="Ligar">
+                                <Phone size={18} className="text-slate-600" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Tabela de Membros */}
+                  <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="p-5 border-b border-slate-200 flex justify-between items-center">
+                      <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        <Users size={18} className="text-yellow-600" />
+                        Todos os Funcionários
+                      </h3>
+                      <span className="text-sm text-slate-500">
+                        {teams.reduce((acc, t) => acc + t.members.length + 1, 0)} funcionários cadastrados
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Nome</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Equipe</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Função</th>
+                            <th className="px-5 py-3 text-left text-xs font-bold text-slate-500 uppercase">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {teams.flatMap(team => [
+                            { name: team.leader, team: team.name, role: 'Líder', status: team.status },
+                            ...team.members.map(member => ({ name: member, team: team.name, role: 'Técnico', status: team.status }))
+                          ]).map((person, i) => (
+                            <tr key={i} className="hover:bg-slate-50">
+                              <td className="px-5 py-4 text-sm text-slate-800 font-medium">{person.name}</td>
+                              <td className="px-5 py-4 text-sm text-slate-600">{person.team}</td>
+                              <td className="px-5 py-4 text-sm">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  person.role === 'Líder' ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {person.role}
+                                </span>
+                              </td>
+                              <td className="px-5 py-4">
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${
+                                  person.status === 'available' ? 'bg-green-100 text-green-700' : 
+                                  person.status === 'busy' ? 'bg-yellow-100 text-yellow-700' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {person.status === 'available' ? 'Disponível' : person.status === 'busy' ? 'Em Campo' : 'Offline'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </main>
         </div>
 
