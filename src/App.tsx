@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   MapPin, Lightbulb, CheckCircle, Clock, AlertTriangle, User, Navigation, 
   Plus, Search, Camera, X, FileText, Bell, Filter, TrendingUp, Calendar, 
@@ -173,14 +173,27 @@ const MapController = ({
   onMapClick: (coords: Coords) => void;
 }) => {
   const map = useMap();
+  const prevCenterRef = useRef<[number, number]>(center);
+  const prevZoomRef = useRef<number>(zoom);
   
   useEffect(() => {
-    map.setView(center, zoom);
+    // Só atualiza se houve mudança real
+    const centerChanged = prevCenterRef.current[0] !== center[0] || prevCenterRef.current[1] !== center[1];
+    const zoomChanged = prevZoomRef.current !== zoom;
+    
+    if (centerChanged || zoomChanged) {
+      map.setView(center, zoom, { animate: true });
+      prevCenterRef.current = center;
+      prevZoomRef.current = zoom;
+    }
   }, [center, zoom, map]);
 
   useMapEvents({
     zoomend: () => {
-      onZoomChange(map.getZoom());
+      const newZoom = map.getZoom();
+      if (newZoom !== prevZoomRef.current) {
+        onZoomChange(newZoom);
+      }
     },
     click: (e) => {
       onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
@@ -210,15 +223,15 @@ const InteractiveMap = ({
   const CENTER_LNG = -49.1178;
 
   // Centralizar mapa em uma localização específica
-  const centerOnCoords = (lat: number, lng: number) => {
+  const centerOnCoords = useCallback((lat: number, lng: number) => {
     setMapCenter([lat, lng]);
-  };
+  }, []);
 
   // Centralizar no centro de Marabá
-  const centerOnMaraba = () => {
+  const centerOnMaraba = useCallback(() => {
     setMapCenter([CENTER_LAT, CENTER_LNG]);
     onZoomChange(14);
-  };
+  }, [onZoomChange]);
 
   // Efeito para centralizar quando highlightedRequest muda
   useEffect(() => {
@@ -229,7 +242,7 @@ const InteractiveMap = ({
         onZoomChange(16);
       }
     }
-  }, [highlightedRequest, requests]);
+  }, [highlightedRequest, centerOnCoords, onZoomChange]);
 
   // Sugestões de busca filtradas
   const searchSuggestions = searchTerm && searchTerm.length > 0 
@@ -305,7 +318,7 @@ const InteractiveMap = ({
             }}
           >
             <Popup>
-              <div className="p-2 min-w-[200px]">
+              <div className="p-2 min-w-50">
                 <div className="flex items-center gap-2 mb-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${getStatusColor(req.status)}`}>
                     {getStatusText(req.status)}
@@ -330,7 +343,7 @@ const InteractiveMap = ({
       </MapContainer>
 
       {/* Barra de Busca com Sugestões */}
-      <div className="absolute top-4 left-4 right-20 z-[1000]">
+      <div className="absolute top-4 left-4 right-20 z-1000">
         <div className="max-w-lg mx-auto">
           <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 overflow-hidden">
             <div className="flex items-center p-3">
@@ -417,7 +430,7 @@ const InteractiveMap = ({
       </div>
 
       {/* Controles de Zoom */}
-      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 flex flex-col z-[1000]">
+      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 flex flex-col z-1000">
         <button
           onClick={() => onZoomChange(Math.min(zoom + 1, 18))}
           className="p-3 border-b border-slate-200 hover:bg-slate-100 text-slate-700 transition"
@@ -448,7 +461,7 @@ const InteractiveMap = ({
       </div>
 
       {/* Legenda do Mapa */}
-      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 p-3 z-[1000]">
+      <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 p-3 z-1000">
         <h4 className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1">
           <MapPin size={12} /> Legenda
         </h4>
@@ -473,14 +486,14 @@ const InteractiveMap = ({
       </div>
 
       {/* Contador de Marcadores */}
-      <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 px-4 py-2 z-[1000]">
+      <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-slate-200 px-4 py-2 z-1000">
         <span className="text-xs font-bold text-slate-600">
           {requests.length} ocorrências
         </span>
       </div>
 
       {/* Dica de Interação */}
-      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-slate-900/80 text-white text-xs px-4 py-2 rounded-full backdrop-blur pointer-events-none z-[1000]">
+      <div className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-slate-900/80 text-white text-xs px-4 py-2 rounded-full backdrop-blur pointer-events-none z-1000">
         🖱️ Arraste para mover • Scroll para zoom • Clique para reportar
       </div>
     </div>
@@ -489,7 +502,28 @@ const InteractiveMap = ({
 
 // --- COMPONENTE PRINCIPAL ---
 const SGIApp = () => {
-  const [currentView, setCurrentView] = useState<'login' | 'citizen' | 'admin'>('login');
+  // Funções helper para localStorage
+  const loadFromStorage = <T,>(key: string, defaultValue: T): T => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch (error) {
+      console.error(`Erro ao carregar ${key}:`, error);
+      return defaultValue;
+    }
+  };
+
+  const saveToStorage = <T,>(key: string, value: T) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(`Erro ao salvar ${key}:`, error);
+    }
+  };
+
+  const [currentView, setCurrentView] = useState<'login' | 'citizen' | 'admin'>(() => 
+    loadFromStorage('sgi_currentView', 'login')
+  );
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showNewRequestModal, setShowNewRequestModal] = useState(false);
   const [showProtocolModal, setShowProtocolModal] = useState(false);
@@ -500,7 +534,9 @@ const SGIApp = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [mapSearchTerm, setMapSearchTerm] = useState('');
-  const [currentUser, setCurrentUser] = useState<UserData>({ id: 1, name: 'Maria Silva', email: 'maria.silva@email.com', phone: '(11) 98765-4321', password: '', type: 'citizen' });
+  const [currentUser, setCurrentUser] = useState<UserData>(() => 
+    loadFromStorage('sgi_currentUser', { id: 0, name: '', email: '', phone: '', password: '', type: 'citizen' as const })
+  );
   const [showFilters, setShowFilters] = useState(false);
   const [mapZoom, setMapZoom] = useState(13);
   const [highlightedRequest, setHighlightedRequest] = useState<number | null>(null);
@@ -508,12 +544,15 @@ const SGIApp = () => {
   // Estado temporário para novo ponto no mapa
   const [newPointCoords, setNewPointCoords] = useState<Coords | null>(null);
 
-  const [users, setUsers] = useState<UserData[]>([
-    { id: 1, email: 'maria.silva@email.com', password: '123456', name: 'Maria Silva', phone: '(94) 98765-4321', type: 'citizen' },
-    { id: 2, email: 'admin@maraba.pa.gov.br', password: 'admin123', name: 'Administrador', phone: '(94) 3324-0000', type: 'admin' },
-  ]);
+  const [users, setUsers] = useState<UserData[]>(() => 
+    loadFromStorage('sgi_users', [
+      { id: 1, email: 'maria.silva@email.com', password: '123456', name: 'Maria Silva', phone: '(94) 98765-4321', type: 'citizen' as const },
+      { id: 2, email: 'admin@maraba.pa.gov.br', password: 'admin123', name: 'Administrador', phone: '(94) 3324-0000', type: 'admin' as const },
+    ])
+  );
 
-  const [requests, setRequests] = useState<Request[]>([
+  const [requests, setRequests] = useState<Request[]>(() => 
+    loadFromStorage('sgi_requests', [
     { 
       id: 1, 
       protocol: '2025-0001-LP',
@@ -616,13 +655,37 @@ const SGIApp = () => {
         { date: '09/12/2025', time: '12:20', title: 'Serviço Concluído', description: 'Lâmpada LED substituída', icon: 'CheckCircle' }
       ]
     }
-  ]);
+  ])
+  );
 
-  const [notifications, setNotifications] = useState<Notification[]>([
+  const [notifications, setNotifications] = useState<Notification[]>(() => 
+    loadFromStorage('sgi_notifications', [
     { id: 1, message: 'Sua solicitação #2025-0002-LP foi atualizada: Equipe a caminho', date: '14/12 08:00', read: false },
     { id: 2, message: 'Manutenção concluída próximo à sua localização', date: '11/12 11:45', read: false },
     { id: 3, message: 'Lembrete: Avalie nosso atendimento', date: '09/12 15:30', read: true }
-  ]);
+  ])
+  );
+
+  // Persistir dados no localStorage
+  useEffect(() => {
+    saveToStorage('sgi_users', users);
+  }, [users]);
+
+  useEffect(() => {
+    saveToStorage('sgi_requests', requests);
+  }, [requests]);
+
+  useEffect(() => {
+    saveToStorage('sgi_notifications', notifications);
+  }, [notifications]);
+
+  useEffect(() => {
+    saveToStorage('sgi_currentUser', currentUser);
+  }, [currentUser]);
+
+  useEffect(() => {
+    saveToStorage('sgi_currentView', currentView);
+  }, [currentView]);
 
   const handleLogin = (email: string, password: string, type: 'citizen' | 'admin'): boolean => {
     const user = users.find(u => u.email === email && u.password === password && u.type === type);
@@ -645,13 +708,6 @@ const SGIApp = () => {
     setCurrentUser(newUser);
     setCurrentView(type);
     return { success: true, message: 'Cadastro realizado com sucesso!' };
-  };
-
-  const handleLogout = () => {
-    setCurrentView('login');
-    setAuthMode('login');
-    setSelectedRequest(null);
-    setShowNotifications(false);
   };
 
   const filteredRequests = requests.filter(req => {
@@ -718,6 +774,12 @@ const SGIApp = () => {
 
   const markNotificationAsRead = (id: number) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleLogout = () => {
+    setCurrentView('login');
+    setCurrentUser({ id: 0, name: '', email: '', phone: '', password: '', type: 'citizen' });
+    setActiveTab('map');
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
